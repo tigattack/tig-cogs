@@ -1,0 +1,8 @@
+{
+    "author": ["tigattack"],
+    "short": "Scheduled events manager",
+    "description": "Create channel and role pairs for scheduled events",
+    "name": "events_manager",
+    "tags": ["utility"],
+    "min_bot_version": "3.5.1"
+}
