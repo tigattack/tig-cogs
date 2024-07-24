@@ -1,0 +1,33 @@
+name: CI
+
+on: [pull_request]
+
+jobs:
+  ruff:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the repository at the current branch
+        uses: actions/checkout@v2
+      - name: Install dependencies
+        uses: ./.github/actions/setup
+      - uses: chartboost/ruff-action@v1
+
+  lint-mypy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the repository at the current branch
+        uses: actions/checkout@v2
+      - name: Install dependencies
+        uses: ./.github/actions/setup
+      - name: Lint with mypy
+        run: mypy --strict .
+
+  check-json:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the repository at the current branch
+        uses: actions/checkout@v2
+      - name: Install dependencies
+        uses: ./.github/actions/setup
+      - name: Check cog and repo JSON files against schema
+        uses: ./.github/actions/check-json
