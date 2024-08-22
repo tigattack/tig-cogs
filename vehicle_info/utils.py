@@ -92,84 +92,6 @@ async def _get_dvsa_mot_info(
     return mot_info
 
 
-async def _fetch_get(url_in: str, headers: dict = {}, data: dict = {}) -> dict:
-    """Make web requests"""
-    async with aiohttp.request("GET", url_in, headers=headers, data=data) as response:
-        if response.status != 200:  # noqa: PLR2004
-            return {}
-        return await response.json()
-
-
-async def _get_brand_domain(brand: str) -> str:
-    """Get brand info from a brand name"""
-    url = f"https://api.brandfetch.io/v2/search/{brand}"
-    response = await _fetch_get(url)
-    return response[0]["domain"]
-
-
-async def _get_brand_icon(
-    brand_domain: str,
-    theme: Literal["light", "dark"] = "light",
-) -> Optional[str]:
-    """Get brand icon from a brand name and detect its true resolution"""
-
-    async def _fetch_image(image_url: str) -> tuple[int, int]:
-        headers = {"User-Agent": "curl/8.6.0"}
-        async with aiohttp.ClientSession() as session:
-            async with session.get(image_url, headers=headers) as response:
-                if response.status != 200:  # noqa: PLR2004
-                    raise ValueError("Failed to fetch the brand icon.")
-                if response.headers.get("Content-Type") != "image/webp":
-                    raise ValueError("Invalid image format. May need to use a different user agent.")
-                image_data = await response.read()
-
-        image = Image.open(BytesIO(image_data))
-        return image.size
-
-    # Set the desired width and aspect ratio tolerance
-    width = 512
-    fallback_width = 256
-    aspect_ratio_tolerance = 0.2
-
-    # Get the domain for the brand
-    brand_domain = await _get_brand_domain(brand_domain)
-
-    image_urls = [
-        f"https://cdn.brandfetch.io/{brand_domain}/w/{width}/theme/{theme}/logo",
-        f"https://cdn.brandfetch.io/{brand_domain}/w/{fallback_width}/theme/{theme}/logo",
-        f"https://cdn.brandfetch.io/{brand_domain}/w/{width}/logo",
-        f"https://cdn.brandfetch.io/{brand_domain}/logo",
-        f"https://cdn.brandfetch.io/{brand_domain}",
-    ]
-
-    # Construct the image URL
-    image_url = f"https://cdn.brandfetch.io/{brand_domain}/w/{width}/theme/{theme}/logo"
-
-    # Fetch the image data
-    icon_res = await _fetch_image(image_url)
-
-    for image_url in image_urls:
-        icon_res = await _fetch_image(image_url)
-        aspect_ratio = icon_res[0] / icon_res[1]
-
-        # Check image is square with 20% tolerance
-        if 1 - aspect_ratio_tolerance <= aspect_ratio <= 1 + aspect_ratio_tolerance:
-            return image_url
-        else:
-            # This can happen for various reasons:
-            # - The resolution is unavailable
-            # - The theme is unavailable
-            # - A logo for the brand is not available
-            # To work around this, we'll try the following:
-            # - Fetch the image with the fallback width
-            # - Fetch the image without specifying a theme
-            # - Finally, just return the brand icon instead of the (preferred) logo
-            continue
-
-    log.warning("Failed to find a valid brand logo or icon for %s.", brand_domain)
-    return None
-
-
 async def _get_vehicle_remap_estimate(vrn: str) -> dict:
     """Get vehicle remap estimate"""
     ct = Celtic(vrn)
@@ -250,12 +172,79 @@ async def _gen_vehicle_embed(
     return embed
 
 
-# async def _update_embed_with_additional_info(embed: Embed, additional_info: VehicleDetails) -> None:
-#     """Helper method to update embed with additional vehicle information"""
-#     for i, field in enumerate(embed.fields):
-#         if field.name == "First Registered in UK":
-#             dt = datetime.strptime(additional_info.Year, "%d/%m/%Y")
-#             embed.set_field_at(i, name="First Registered in UK", value=discord.utils.format_dt(dt, "d"))
-#         elif field.name == "First Registered":
-#             dt = datetime.strptime(additional_info.Year, "%d/%m/%Y")
-#             embed.set_field_at(i, name="First Registered", value=discord.utils.format_dt(dt, "d"))
+async def _fetch_get(url_in: str, headers: dict = {}, data: dict = {}) -> dict:
+    """Make web requests"""
+    async with aiohttp.request("GET", url_in, headers=headers, data=data) as response:
+        if response.status != 200:  # noqa: PLR2004
+            return {}
+        return await response.json()
+
+
+async def _get_brand_domain(brand: str) -> str:
+    """Get brand info from a brand name"""
+    url = f"https://api.brandfetch.io/v2/search/{brand}"
+    response = await _fetch_get(url)
+    return response[0]["domain"]
+
+
+async def _get_brand_icon(
+    brand_domain: str,
+    theme: Literal["light", "dark"] = "light",
+) -> Optional[str]:
+    """Get brand icon from a brand name and detect its true resolution"""
+
+    async def _fetch_image(image_url: str) -> tuple[int, int]:
+        headers = {"User-Agent": "curl/8.6.0"}
+        async with aiohttp.ClientSession() as session:
+            async with session.get(image_url, headers=headers) as response:
+                if response.status != 200:  # noqa: PLR2004
+                    raise ValueError("Failed to fetch the brand icon.")
+                if response.headers.get("Content-Type") != "image/webp":
+                    raise ValueError("Invalid image format. May need to use a different user agent.")
+                image_data = await response.read()
+
+        image = Image.open(BytesIO(image_data))
+        return image.size
+
+    # Set the desired width and aspect ratio tolerance
+    width = 512
+    fallback_width = 256
+    aspect_ratio_tolerance = 0.2
+
+    # Get the domain for the brand
+    brand_domain = await _get_brand_domain(brand_domain)
+
+    image_urls = [
+        f"https://cdn.brandfetch.io/{brand_domain}/w/{width}/theme/{theme}/logo",
+        f"https://cdn.brandfetch.io/{brand_domain}/w/{fallback_width}/theme/{theme}/logo",
+        f"https://cdn.brandfetch.io/{brand_domain}/w/{width}/logo",
+        f"https://cdn.brandfetch.io/{brand_domain}/logo",
+        f"https://cdn.brandfetch.io/{brand_domain}",
+    ]
+
+    # Construct the image URL
+    image_url = f"https://cdn.brandfetch.io/{brand_domain}/w/{width}/theme/{theme}/logo"
+
+    # Fetch the image data
+    icon_res = await _fetch_image(image_url)
+
+    for image_url in image_urls:
+        icon_res = await _fetch_image(image_url)
+        aspect_ratio = icon_res[0] / icon_res[1]
+
+        # Check image is square with 20% tolerance
+        if 1 - aspect_ratio_tolerance <= aspect_ratio <= 1 + aspect_ratio_tolerance:
+            return image_url
+        else:
+            # This can happen for various reasons:
+            # - The resolution is unavailable
+            # - The theme is unavailable
+            # - A logo for the brand is not available
+            # To work around this, we'll try the following:
+            # - Fetch the image with the fallback width
+            # - Fetch the image without specifying a theme
+            # - Finally, just return the brand icon instead of the (preferred) logo
+            continue
+
+    log.warning("Failed to find a valid brand logo or icon for %s.", brand_domain)
+    return None
