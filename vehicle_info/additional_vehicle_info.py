@@ -56,18 +56,29 @@ class VehicleLookupAPI:
         url = f"{self.base_url}/api/lookup-reg/{vrn}"
 
         log.debug(
-            "Making request for additional vehicle info to %s with user agent %s",
+            "Making request for additional vehicle info to %s%s",
             url,
-            self.user_agent if self.user_agent else "[aiohttp default]",
+            f" with user agent {self.user_agent}" if self.user_agent else "",
         )
 
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url, headers=headers) as response:
-                if response.status == 200:  # noqa: PLR2004
-                    try:
-                        vehicle_data = await response.json()
-                        return VehicleDetails(**vehicle_data)
-                    except (json.JSONDecodeError, TypeError) as e:
-                        raise ValueError(f"Invalid response format: {e}")
-                else:
-                    raise ValueError(f"Error from API: {response.status} - {await response.text()}")
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url, headers=headers) as response:
+                    if response.status == 200:  # noqa: PLR2004
+                        try:
+                            vehicle_data = await response.json()
+                            return VehicleDetails(**vehicle_data)
+                        except (json.JSONDecodeError, TypeError) as e:
+                            raise ValueError(f"Invalid response format: {e}")
+                    else:
+                        error_message = await response.text()
+                        log.error("API request failed with status %s: %s", response.status, error_message)
+                        raise ValueError(f"Error from API: {response.status} - {error_message}")
+
+        except aiohttp.ClientError as e:
+            log.error("Network error occurred while fetching vehicle details: %s", e)
+            raise ConnectionError(f"Network error: {e}")
+
+        except Exception as e:
+            log.exception("An unexpected error occurred: %s", e)
+            raise RuntimeError(f"Unexpected error: {e}")
