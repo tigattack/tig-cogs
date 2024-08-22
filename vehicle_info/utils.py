@@ -4,7 +4,6 @@ from typing import Literal, Optional, Union
 
 import aiohttp
 from CelticTuning import Celtic
-from dateutil import relativedelta
 from discord import Embed
 from dvla_vehicle_enquiry_service import ErrorResponse as VesErrorResponse
 from dvla_vehicle_enquiry_service import Vehicle, VehicleEnquiryAPI
