@@ -4,7 +4,7 @@ from typing import Literal, Optional, Union
 
 import aiohttp
 from CelticTuning import Celtic
-from discord import Embed
+from discord import Colour, Embed
 from dvla_vehicle_enquiry_service import ErrorResponse as VesErrorResponse
 from dvla_vehicle_enquiry_service import Vehicle, VehicleEnquiryAPI
 from dvsa_mot_history import ErrorResponse as MotHistoryErrorResponse
@@ -24,6 +24,7 @@ async def get_vehicle_info(
     additional_vehicle_api_cfg: dict[str, str],
 ) -> Embed:
     """Get vehicle info"""
+
     if dvla_ves_token.get("token") is None:
         raise ValueError("DVLA Vehicle Enquiry Service API token not found")
 
@@ -37,12 +38,23 @@ async def get_vehicle_info(
         errors = [
             f"{error.status}: {error.title}" + (f" - {error.detail}" if error.detail else "") for error in ves_info.errors
         ]
+        log.exception(", ".join(errors))
+        if int(ves_info.errors[0].status) == 400:  # noqa: PLR2004
+            error_detail = f"{ves_info.errors[0].title}" + (
+                f": {ves_info.errors[0].detail}" if ves_info.errors[0].detail else ""
+            )
+            return Embed(
+                title="Error Querying Vehicle",
+                description=f"DVLA says {error_detail}",
+                colour=Colour.red(),
+            )
         raise ValueError(f"Error querying VES API: {', '.join(errors)}")
 
     mot_info = await _get_dvsa_mot_info(vrn, dvsa_mot_history_token)
 
     if isinstance(mot_info, MotHistoryErrorResponse):
         error = f"{mot_info.status_code}: {mot_info.message} - Errors: {', '.join(mot_info.errors)}"
+        log.exception(error)
         raise ValueError(f"Error querying MOT History API: {error}")
 
     if additional_vehicle_api_cfg.get("base_url"):
