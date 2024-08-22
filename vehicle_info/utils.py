@@ -31,8 +31,7 @@ async def get_vehicle_info(
         if dvsa_mot_history_token.get(cred) is None:
             raise ValueError(f"DVSA MOT History API {cred} not found")
 
-    ves_api = VehicleEnquiryAPI(dvla_ves_token["token"])
-    ves_info = await ves_api.get_vehicle(vrn)
+    ves_info = await _get_dvla_ves_info(vrn, dvla_ves_token)
 
     if isinstance(ves_info, VesErrorResponse):
         errors = [
@@ -40,13 +39,7 @@ async def get_vehicle_info(
         ]
         raise ValueError(f"Error querying VES API: {', '.join(errors)}")
 
-    mot_api = MOTHistory(
-        dvsa_mot_history_token["client_id"],
-        dvsa_mot_history_token["client_secret"],
-        dvsa_mot_history_token["tenant_id"],
-        dvsa_mot_history_token["api_key"],
-    )
-    mot_info = await mot_api.get_vehicle_history_by_registration(vrn)
+    mot_info = await _get_dvsa_mot_info(vrn, dvsa_mot_history_token)
 
     if isinstance(mot_info, MotHistoryErrorResponse):
         error = f"{mot_info.status_code}: {mot_info.message} - Errors: {', '.join(mot_info.errors)}"
@@ -64,6 +57,27 @@ async def get_vehicle_info(
     embed = await _gen_vehicle_embed(ves_info, mot_info, additional_info)
 
     return embed
+
+
+async def _get_dvla_ves_info(vrn: str, dvla_ves_token: dict[str, str]) -> Vehicle | VesErrorResponse:
+    """Get vehicle info from DVLA Vehicle Enquiry Service API"""
+    ves_api = VehicleEnquiryAPI(dvla_ves_token["token"])
+    ves_info = await ves_api.get_vehicle(vrn)
+    return ves_info
+
+
+async def _get_dvsa_mot_info(
+    vrn: str, dvsa_mot_history_token: dict[str, str]
+) -> VehicleWithMotResponse | NewRegVehicleResponse | MotHistoryErrorResponse:
+    """Get MOT info from DVSA MOT History API"""
+    mot_api = MOTHistory(
+        dvsa_mot_history_token["client_id"],
+        dvsa_mot_history_token["client_secret"],
+        dvsa_mot_history_token["tenant_id"],
+        dvsa_mot_history_token["api_key"],
+    )
+    mot_info = await mot_api.get_vehicle_history_by_registration(vrn)
+    return mot_info
 
 
 async def _fetch_get(url_in: str, headers: dict = {}, data: dict = {}) -> dict:
