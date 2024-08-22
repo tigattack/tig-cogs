@@ -79,7 +79,9 @@ class VehicleData:
     marked_for_export: Optional[bool] = None
 
     @classmethod
-    def from_vehicle(cls, ves_info: Vehicle, mot_info: Union[VehicleWithMotResponse, NewRegVehicleResponse]) -> "VehicleData":
+    async def from_vehicle(
+        cls, ves_info: Vehicle, mot_info: Union[VehicleWithMotResponse, NewRegVehicleResponse]
+    ) -> "VehicleData":
         """Factory method to create VehicleData from Vehicle object"""
         mot_due = mot_info.motTestDueDate if isinstance(mot_info, NewRegVehicleResponse) else ves_info.motExpiryDate
 

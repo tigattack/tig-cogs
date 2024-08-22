@@ -160,7 +160,7 @@ async def _gen_vehicle_embed(
     additional_info: Optional[VehicleDetails],
 ) -> Embed:
     """Helper method to send a vehicle embed"""
-    vehicle_data = VehicleData.from_vehicle(ves_info, mot_info)
+    vehicle_data = await VehicleData.from_vehicle(ves_info, mot_info)
     brand_icon = await _get_brand_icon(vehicle_data.make)
 
     # Set global first date of registration
