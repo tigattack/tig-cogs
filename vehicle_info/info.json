@@ -6,7 +6,8 @@
     "tags": ["utility"],
     "min_bot_version": "3.5.1",
     "requirements": [
-        "git+https://github.com/tigattack/CelticTuning",
-        "mot-history-api-py-sdk"
+        "dvla_vehicle_enquiry_service",
+        "dvsa_mot_history",
+        "git+https://github.com/tigattack/CelticTuning"
     ]
 }
