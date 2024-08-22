@@ -11,6 +11,8 @@ from dvla_vehicle_enquiry_service import MotStatus, TaxStatus, Vehicle
 from dvsa_mot_history import MotTestTestResult, NewRegVehicleResponse, VehicleWithMotResponse
 from redbot.core import utils
 
+from vehicle_info.additional_vehicle_info import VehicleDetails
+
 
 class VehicleColours(Enum):
     r"""
@@ -58,7 +60,7 @@ class VehicleData:
     registration_number: str
     make: str
     model: str
-    colour: Union[int, Colour]
+    colour: str
     vehicle_is_ev: bool
     fuel_type: str
     engine_capacity: Optional[int]
@@ -81,7 +83,10 @@ class VehicleData:
 
     @classmethod
     async def from_vehicle(
-        cls, ves_info: Vehicle, mot_info: Union[VehicleWithMotResponse, NewRegVehicleResponse], vin: Optional[str]
+        cls,
+        ves_info: Vehicle,
+        mot_info: Union[VehicleWithMotResponse, NewRegVehicleResponse],
+        additional_info: Optional[VehicleDetails],
     ) -> "VehicleData":
         """Factory method to create VehicleData from Vehicle object"""
         mot_due = mot_info.motTestDueDate if isinstance(mot_info, NewRegVehicleResponse) else ves_info.motExpiryDate
@@ -89,8 +94,8 @@ class VehicleData:
         return cls(
             registration_number=ves_info.registrationNumber.upper(),
             make=ves_info.make,
-            model=mot_info.model,
-            colour=VehicleColours.get_colour(ves_info.colour),
+            model=additional_info.Model if additional_info else mot_info.model,
+            colour=ves_info.colour,
             vehicle_is_ev=str(ves_info.fuelType).lower() == "electricity",
             fuel_type=str(ves_info.fuelType).title(),
             engine_capacity=ves_info.engineCapacity,
@@ -113,7 +118,7 @@ class VehicleData:
             mot_first_registration_timestamp=cls.format_timestamp(mot_info.registrationDate, "d"),
             manufactured_year=ves_info.yearOfManufacture,
             marked_for_export=ves_info.markedForExport,
-            vin=vin,
+            vin=additional_info.VIN if additional_info else None,
         )
 
     @staticmethod

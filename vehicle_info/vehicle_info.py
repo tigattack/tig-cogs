@@ -56,8 +56,18 @@ class VehicleInfo(commands.Cog):
         dvla_ves_token = await self.bot.get_shared_api_tokens("dvla")
         dvsa_mot_history_token = await self.bot.get_shared_api_tokens("dvsa")
         additional_vehicle_info_api_cfg = await self.config.additional_vehicle_info_api()
+
         try:
-            embed = await get_vehicle_info(vrn, dvla_ves_token, dvsa_mot_history_token, additional_vehicle_info_api_cfg)
+            vehicle_info = await get_vehicle_info(vrn, dvla_ves_token, dvsa_mot_history_token, additional_vehicle_info_api_cfg)
+
+            if vehicle_info is None:
+                embed = Embed(
+                    title="Error Querying Vehicle",
+                    description=f"Bad request - Registration **{vrn.upper()}** likely invalid.",
+                    colour=Colour.red(),
+                )
+            else:
+                embed = await gen_vehicle_embed(vehicle_info)
         except Exception as e:
             log.exception(e)
             embed = Embed(
@@ -65,6 +75,7 @@ class VehicleInfo(commands.Cog):
                 description="Failed to get vehicle info. Check console or logs for details",
                 colour=Colour.red(),
             )
+
         await interaction.followup.send(embed=embed)
 
     @commands.group(name="vehicle_info")

@@ -1,18 +1,18 @@
 import logging
 from io import BytesIO
-from typing import Literal, Optional, Union
+from typing import Literal, Optional
 
 import aiohttp
 from CelticTuning import Celtic
-from discord import Colour, Embed
+from discord import Embed
 from dvla_vehicle_enquiry_service import ErrorResponse as VesErrorResponse
 from dvla_vehicle_enquiry_service import Vehicle, VehicleEnquiryAPI
 from dvsa_mot_history import ErrorResponse as MotHistoryErrorResponse
 from dvsa_mot_history import MOTHistory, NewRegVehicleResponse, VehicleWithMotResponse
 from PIL import Image
 
-from .additional_vehicle_info import VehicleDetails, VehicleLookupAPI
-from .models import VehicleData
+from .additional_vehicle_info import VehicleLookupAPI
+from .models import VehicleColours, VehicleData
 
 log = logging.getLogger("red.tigattack.vehicle_info.utils")
 
@@ -22,7 +22,7 @@ async def get_vehicle_info(
     dvla_ves_token: dict[str, str],
     dvsa_mot_history_token: dict[str, str],
     additional_vehicle_api_cfg: dict[str, str],
-) -> Embed:
+) -> Optional[VehicleData]:
     """Get vehicle info"""
 
     if dvla_ves_token.get("token") is None:
@@ -40,15 +40,7 @@ async def get_vehicle_info(
         ]
         log.exception(", ".join(errors))
         if int(ves_info.errors[0].status) == 400:  # noqa: PLR2004
-            error_detail = f"{ves_info.errors[0].title}" + (
-                f": {ves_info.errors[0].detail}" if ves_info.errors[0].detail else ""
-            )
-            return Embed(
-                title="Error Querying Vehicle",
-                description=f"DVLA says {error_detail}",
-                colour=Colour.red(),
-            )
-        raise ValueError(f"Error querying VES API: {', '.join(errors)}")
+            return None
 
     mot_info = await _get_dvsa_mot_info(vrn, dvsa_mot_history_token)
 
@@ -66,9 +58,9 @@ async def get_vehicle_info(
     else:
         additional_info = None
 
-    embed = await _gen_vehicle_embed(ves_info, mot_info, additional_info)
+    vehicle_data = await VehicleData.from_vehicle(ves_info, mot_info, additional_info)
 
-    return embed
+    return vehicle_data
 
 
 async def _get_dvla_ves_info(vrn: str, dvla_ves_token: dict[str, str]) -> Vehicle | VesErrorResponse:
@@ -102,32 +94,34 @@ async def _get_vehicle_remap_estimate(vrn: str) -> dict:
     return remap
 
 
-async def _gen_vehicle_embed(
-    ves_info: Vehicle,
-    mot_info: Union[VehicleWithMotResponse, NewRegVehicleResponse],
-    additional_info: Optional[VehicleDetails],
-) -> Embed:
+async def gen_vehicle_embed(vehicle_data: VehicleData) -> Embed:
     """Helper method to send a vehicle embed"""
-    vehicle_data = await VehicleData.from_vehicle(ves_info, mot_info, additional_info.VIN if additional_info else None)
+
+    embed = Embed(
+        title=(
+            f"{vehicle_data.registration_number} | {vehicle_data.manufactured_year} {vehicle_data.make} {vehicle_data.model}"
+        ),
+        colour=VehicleColours.get_colour(vehicle_data.colour),
+    )
+
     brand_icon = await _get_brand_icon(vehicle_data.make)
+    if brand_icon:
+        embed.set_thumbnail(url=brand_icon)
 
     # Set global first date of registration
     first_registered_globally = vehicle_data.mot_first_registration_timestamp or vehicle_data.ves_first_registration_timestamp
 
     # Determine if the vehicle was first registered in the UK or internationally
-    if ves_info.monthOfFirstDvlaRegistration is not None:
+    if vehicle_data.ves_first_dvla_registration_timestamp is not None:
         # Vehicle was imported
         first_registered_uk = vehicle_data.ves_first_dvla_registration_timestamp
     else:
         # Vehicle was first registered in the UK
         first_registered_uk = None
 
-    embed = Embed(colour=vehicle_data.colour)
-    embed.set_thumbnail(url=brand_icon)
-
     # Dynamically build the embed fields based on VehicleData attributes
     fields_to_include = {
-        "Colour": str(ves_info.colour).title(),
+        "Colour": str(vehicle_data.colour).title(),
         vehicle_data.fuel_label: vehicle_data.fuel_type,
         "Engine Capacity": f"{vehicle_data.engine_capacity} cc"
         if vehicle_data.engine_capacity and not vehicle_data.vehicle_is_ev
@@ -136,15 +130,13 @@ async def _gen_vehicle_embed(
         "First Registered in UK": first_registered_uk,
         "V5C Last Issued": vehicle_data.date_of_last_v5c_issued_timestamp,
         "Tax Status": vehicle_data.tax_status,
-        "Tax Expiry": vehicle_data.tax_due_date_timestamp if ves_info.taxStatus != "SORN" else None,
+        "Tax Expiry": vehicle_data.tax_due_date_timestamp if "SORN" not in vehicle_data.tax_status else None,
         "MOT Status": vehicle_data.mot_status,
         "MOT Expiry": vehicle_data.mot_expiry_date_timestamp,
         "CO₂ Emissions": f"{vehicle_data.co2_emissions} g/km"
         if vehicle_data.co2_emissions and not vehicle_data.vehicle_is_ev
         else None,
-        "Euro Status": vehicle_data.euro_status
-        if ves_info.motStatus not in ["No details held by DVLA", "No results returned"]
-        else None,
+        "Euro Status": vehicle_data.euro_status,
         "Real Driving Emissions": vehicle_data.real_driving_emissions
         if vehicle_data.real_driving_emissions and not vehicle_data.vehicle_is_ev
         else None,
@@ -157,15 +149,9 @@ async def _gen_vehicle_embed(
         if value:
             embed.add_field(name=name, value=value, inline=True)
 
-    title = f"{vehicle_data.registration_number} | {vehicle_data.manufactured_year} {vehicle_data.make}"
-
-    # Use the more specific model name provided by the additional info API if available
-    if additional_info:
-        embed.title = f"{title} {additional_info.Model}"
-    else:
-        embed.title = f"{title} {vehicle_data.model}"
+    if vehicle_data.vin is None:
         embed.set_footer(
-            text="Additional info such as model, VIN, etc. not available. "
+            text="Additional info such as full model, VIN, etc. not available. "
             + "Check `[p]vehicle_info additional_vehicle_info_config`."
         )
 
