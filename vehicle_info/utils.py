@@ -186,7 +186,7 @@ async def _gen_vehicle_embed(
     additional_info: Optional[VehicleDetails],
 ) -> Embed:
     """Helper method to send a vehicle embed"""
-    vehicle_data = await VehicleData.from_vehicle(ves_info, mot_info)
+    vehicle_data = await VehicleData.from_vehicle(ves_info, mot_info, additional_info.VIN if additional_info else None)
     brand_icon = await _get_brand_icon(vehicle_data.make)
 
     # Set global first date of registration
@@ -228,6 +228,7 @@ async def _gen_vehicle_embed(
         else None,
         "Automated Vehicle": str(vehicle_data.automated_vehicle) if vehicle_data.automated_vehicle is not None else None,
         "Marked for Export": "✅" if vehicle_data.marked_for_export else None,
+        "VIN": vehicle_data.vin,
     }
 
     for name, value in fields_to_include.items():
@@ -236,15 +237,11 @@ async def _gen_vehicle_embed(
 
     title = f"{vehicle_data.registration_number} | {vehicle_data.manufactured_year} {vehicle_data.make}"
 
-    # Add additional information if available
+    # Use the more specific model name provided by the additional info API if available
     if additional_info:
-        if additional_info.Model:
-            embed.title = f"{title} {additional_info.Model}"
-        else:
-            embed.title = f"{title} {vehicle_data.model}"
-        embed.add_field(name="VIN", value=additional_info.VIN, inline=True)
-        # await _update_embed_with_additional_info(embed, additional_info)
+        embed.title = f"{title} {additional_info.Model}"
     else:
+        embed.title = f"{title} {vehicle_data.model}"
         embed.set_footer(
             text="Additional info such as model, VIN, etc. not available. "
             + "Check `[p]vehicle_info additional_vehicle_info_config`."

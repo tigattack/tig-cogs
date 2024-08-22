@@ -77,10 +77,11 @@ class VehicleData:
     mot_first_registration_timestamp: Optional[str] = None
     manufactured_year: Optional[int] = None
     marked_for_export: Optional[bool] = None
+    vin: Optional[str] = None
 
     @classmethod
     async def from_vehicle(
-        cls, ves_info: Vehicle, mot_info: Union[VehicleWithMotResponse, NewRegVehicleResponse]
+        cls, ves_info: Vehicle, mot_info: Union[VehicleWithMotResponse, NewRegVehicleResponse], vin: Optional[str]
     ) -> "VehicleData":
         """Factory method to create VehicleData from Vehicle object"""
         mot_due = mot_info.motTestDueDate if isinstance(mot_info, NewRegVehicleResponse) else ves_info.motExpiryDate
@@ -112,6 +113,7 @@ class VehicleData:
             mot_first_registration_timestamp=cls.format_timestamp(mot_info.registrationDate, "d"),
             manufactured_year=ves_info.yearOfManufacture,
             marked_for_export=ves_info.markedForExport,
+            vin=vin,
         )
 
     @staticmethod
