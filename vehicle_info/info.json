@@ -6,6 +6,7 @@
     "tags": ["utility"],
     "min_bot_version": "3.5.1",
     "requirements": [
+        "python-dateutil",
         "dvla_vehicle_enquiry_service",
         "dvsa_mot_history",
         "git+https://github.com/tigattack/CelticTuning"
