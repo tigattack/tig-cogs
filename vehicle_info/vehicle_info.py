@@ -1,8 +1,9 @@
 import logging
 from typing import Literal
 
-import discord
 from CelticTuning import Celtic, PowerUnits, TorqueUnits
+from discord import Colour, Embed, Guild, Interaction, User
+from discord.abc import User as UserABC
 from redbot.core import Config, app_commands, commands, utils
 from redbot.core.bot import Red
 
@@ -48,7 +49,7 @@ class VehicleInfo(commands.Cog):
     vehicle_info_group = app_commands.Group(name="vehicle_info", description="Vehicle Info desc")
 
     @app_commands.command(name="car")
-    async def vehicle_info(self, interaction: discord.Interaction, vrn: str) -> None:
+    async def vehicle_info(self, interaction: Interaction, vrn: str) -> None:
         """Vehicle info commands"""
         await interaction.response.defer(thinking=True)
 
@@ -59,10 +60,10 @@ class VehicleInfo(commands.Cog):
             embed = await get_vehicle_info(vrn, dvla_ves_token, dvsa_mot_history_token, additional_vehicle_info_api_cfg)
         except Exception as e:
             log.exception(e)
-            embed = discord.Embed(
+            embed = Embed(
                 title="Error",
                 description="Failed to get vehicle info. Check console or logs for details",
-                colour=discord.Colour.red(),
+                colour=Colour.red(),
             )
         await interaction.followup.send(embed=embed)
 
@@ -80,7 +81,7 @@ class VehicleInfo(commands.Cog):
     @additional_vehicle_info_api_config.command(name="show")
     async def show_additional_vehicle_info_api_config(self, ctx: commands.Context) -> None:
         """Show current additional vehicle info config"""
-        embed = discord.Embed(
+        embed = Embed(
             title="Vehicle Info Config",
             colour=await ctx.embed_colour(),
         )
@@ -191,9 +192,9 @@ class VehicleInfo(commands.Cog):
         """Set the global torque unit"""
         await self._set_torque_unit(ctx, ctx.author, unit)
 
-    async def _gen_unit_config_embed(self, embed_colour: discord.Colour, config: dict) -> discord.Embed:
+    async def _gen_unit_config_embed(self, embed_colour: Colour, config: dict) -> Embed:
         """Helper method to send a configuration embed"""
-        embed = discord.Embed(
+        embed = Embed(
             title="Vehicle Info Config",
             colour=embed_colour,
         )
@@ -222,26 +223,26 @@ class VehicleInfo(commands.Cog):
 
         return embed
 
-    async def _get_config(self, entity: discord.abc.User | discord.Guild | Literal["global"]) -> dict:
+    async def _get_config(self, entity: UserABC | Guild | Literal["global"]) -> dict:
         """Get the config for a user or guild"""
-        if isinstance(entity, discord.User):
+        if isinstance(entity, User):
             return await self.config.user(entity).all()
-        elif isinstance(entity, discord.Guild):
+        elif isinstance(entity, Guild):
             return await self.config.guild(entity).all()
         elif entity == "global":
             return await self.config.all()
         return {}
 
-    async def _set_config(self, entity: discord.abc.User | discord.Guild | Literal["global"], key: str, value: str):
+    async def _set_config(self, entity: UserABC | Guild | Literal["global"], key: str, value: str):
         """Set a config value for a user or guild"""
-        if isinstance(entity, discord.User):
+        if isinstance(entity, User):
             await self.config.user(entity).set_raw(key, value=value)
-        elif isinstance(entity, discord.Guild):
+        elif isinstance(entity, Guild):
             await self.config.guild(entity).set_raw(key, value=value)
         elif entity == "global":
             await self.config.set_raw(key, value=value)  # TODO: this doesn't work
 
-    async def _set_power_unit(self, ctx: commands.Context, entity: discord.abc.User | discord.Guild, unit: str):
+    async def _set_power_unit(self, ctx: commands.Context, entity: UserABC | Guild, unit: str):
         """Helper method to set the power unit config value"""
         unit_normalised = Celtic.normalise_unit(unit, PowerUnits)
         if unit_normalised not in PowerUnits._value2member_map_:
@@ -253,7 +254,7 @@ class VehicleInfo(commands.Cog):
         await self._set_config(entity, "power_unit", unit_normalised)
         await ctx.tick()
 
-    async def _set_torque_unit(self, ctx: commands.Context, entity: discord.abc.User | discord.Guild, unit: str):
+    async def _set_torque_unit(self, ctx: commands.Context, entity: UserABC | Guild, unit: str):
         """Helper method to set the torque unit config value"""
         unit_normalised = Celtic.normalise_unit(unit, TorqueUnits)
         if unit_normalised not in TorqueUnits._value2member_map_:

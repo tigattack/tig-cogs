@@ -1,11 +1,11 @@
 """Wrapper for undisclosed additional vehicle information API"""
 
-import json
 import logging
 from dataclasses import dataclass
+from json import JSONDecodeError
 from typing import Optional
 
-import aiohttp
+from aiohttp import ClientError, ClientSession
 
 log = logging.getLogger("red.tigattack.vehicle_info.additional_vehicle_info")
 
@@ -62,20 +62,20 @@ class VehicleLookupAPI:
         )
 
         try:
-            async with aiohttp.ClientSession() as session:
+            async with ClientSession() as session:
                 async with session.get(url, headers=headers) as response:
                     if response.status == 200:  # noqa: PLR2004
                         try:
                             vehicle_data = await response.json()
                             return VehicleDetails(**vehicle_data)
-                        except (json.JSONDecodeError, TypeError) as e:
+                        except (JSONDecodeError, TypeError) as e:
                             raise ValueError(f"Invalid response format: {e}")
                     else:
                         error_message = await response.text()
                         log.error("API request failed with status %s: %s", response.status, error_message)
                         raise ValueError(f"Error from API: {response.status} - {error_message}")
 
-        except aiohttp.ClientError as e:
+        except ClientError as e:
             log.error("Network error occurred while fetching vehicle details: %s", e)
             raise ConnectionError(f"Network error: {e}")
 
