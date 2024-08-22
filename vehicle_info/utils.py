@@ -63,37 +63,6 @@ async def get_vehicle_info(
     return vehicle_data
 
 
-async def _get_dvla_ves_info(vrn: str, dvla_ves_token: dict[str, str]) -> Vehicle | VesErrorResponse:
-    """Get vehicle info from DVLA Vehicle Enquiry Service API"""
-    ves_api = VehicleEnquiryAPI(dvla_ves_token["token"])
-    ves_info = await ves_api.get_vehicle(vrn)
-    return ves_info
-
-
-async def _get_dvsa_mot_info(
-    vrn: str, dvsa_mot_history_token: dict[str, str]
-) -> VehicleWithMotResponse | NewRegVehicleResponse | MotHistoryErrorResponse:
-    """Get MOT info from DVSA MOT History API"""
-    mot_api = MOTHistory(
-        dvsa_mot_history_token["client_id"],
-        dvsa_mot_history_token["client_secret"],
-        dvsa_mot_history_token["tenant_id"],
-        dvsa_mot_history_token["api_key"],
-    )
-    mot_info = await mot_api.get_vehicle_history_by_registration(vrn)
-    return mot_info
-
-
-async def _get_vehicle_remap_estimate(vrn: str) -> dict:
-    """Get vehicle remap estimate"""
-    ct = Celtic(vrn)
-    remap = ct.remap_data()
-
-    # TODO: build embed
-
-    return remap
-
-
 async def gen_vehicle_embed(vehicle_data: VehicleData) -> Embed:
     """Helper method to send a vehicle embed"""
 
@@ -156,6 +125,37 @@ async def gen_vehicle_embed(vehicle_data: VehicleData) -> Embed:
         )
 
     return embed
+
+
+async def _get_dvla_ves_info(vrn: str, dvla_ves_token: dict[str, str]) -> Vehicle | VesErrorResponse:
+    """Get vehicle info from DVLA Vehicle Enquiry Service API"""
+    ves_api = VehicleEnquiryAPI(dvla_ves_token["token"])
+    ves_info = await ves_api.get_vehicle(vrn)
+    return ves_info
+
+
+async def _get_dvsa_mot_info(
+    vrn: str, dvsa_mot_history_token: dict[str, str]
+) -> VehicleWithMotResponse | NewRegVehicleResponse | MotHistoryErrorResponse:
+    """Get MOT info from DVSA MOT History API"""
+    mot_api = MOTHistory(
+        dvsa_mot_history_token["client_id"],
+        dvsa_mot_history_token["client_secret"],
+        dvsa_mot_history_token["tenant_id"],
+        dvsa_mot_history_token["api_key"],
+    )
+    mot_info = await mot_api.get_vehicle_history_by_registration(vrn)
+    return mot_info
+
+
+async def _get_vehicle_remap_estimate(vrn: str) -> dict:
+    """Get vehicle remap estimate"""
+    ct = Celtic(vrn)
+    remap = ct.remap_data()
+
+    # TODO: build embed
+
+    return remap
 
 
 async def _fetch_get(url_in: str, headers: dict = {}, data: dict = {}) -> dict:
