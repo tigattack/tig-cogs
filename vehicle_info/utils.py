@@ -25,6 +25,7 @@ async def get_vehicle_info(
 ) -> Optional[VehicleData]:
     """Get vehicle info"""
 
+    # Validate tokens
     if dvla_ves_token.get("token") is None:
         raise ValueError("DVLA Vehicle Enquiry Service API token not found")
 
@@ -32,6 +33,7 @@ async def get_vehicle_info(
         if dvsa_mot_history_token.get(cred) is None:
             raise ValueError(f"DVSA MOT History API {cred} not found")
 
+    # Fetch vehicle data from DVLA VES
     ves_info = await _get_dvla_ves_info(vrn, dvla_ves_token)
 
     if isinstance(ves_info, VesErrorResponse):
@@ -42,6 +44,7 @@ async def get_vehicle_info(
         if int(ves_info.errors[0].status) == 400:  # noqa: PLR2004
             return None
 
+    # Fetch MOT data from DVSA
     mot_info = await _get_dvsa_mot_info(vrn, dvsa_mot_history_token)
 
     if isinstance(mot_info, MotHistoryErrorResponse):
@@ -49,14 +52,14 @@ async def get_vehicle_info(
         log.exception(error)
         raise ValueError(f"Error querying MOT History API: {error}")
 
+    # Fetch additional vehicle details if API configuration is provided
+    additional_info = None
     if additional_vehicle_api_cfg.get("base_url"):
         additional_info_api = VehicleLookupAPI(
             additional_vehicle_api_cfg["base_url"],
             additional_vehicle_api_cfg.get("user_agent"),
         )
         additional_info = await additional_info_api.get_vehicle_details(vrn)
-    else:
-        additional_info = None
 
     vehicle_data = await VehicleData.from_vehicle(ves_info, mot_info, additional_info)
 
@@ -203,6 +206,10 @@ async def _get_brand_icon(
     # Get the domain for the brand
     brand_domain = await _get_brand_domain(brand_domain)
 
+    # Logo as desired
+    # Logo with the fallback width
+    # Logo without specifying a theme
+    # Brand icon (usually not transparent, often not a "clean" logo)
     image_urls = [
         f"https://cdn.brandfetch.io/{brand_domain}/w/{width}/theme/{theme}/logo",
         f"https://cdn.brandfetch.io/{brand_domain}/w/{fallback_width}/theme/{theme}/logo",
@@ -217,6 +224,11 @@ async def _get_brand_icon(
     # Fetch the image data
     icon_res = await _fetch_image(image_url)
 
+    # Iterate through URLs to find the best matching image.
+    # There are a few ways in which an image in the the desired format can be unavailable:
+    # - The resolution is unavailable
+    # - The theme is unavailable
+    # - A logo for the brand is not available
     for image_url in image_urls:
         icon_res = await _fetch_image(image_url)
         aspect_ratio = icon_res[0] / icon_res[1]
@@ -225,14 +237,6 @@ async def _get_brand_icon(
         if 1 - aspect_ratio_tolerance <= aspect_ratio <= 1 + aspect_ratio_tolerance:
             return image_url
         else:
-            # This can happen for various reasons:
-            # - The resolution is unavailable
-            # - The theme is unavailable
-            # - A logo for the brand is not available
-            # To work around this, we'll try the following:
-            # - Fetch the image with the fallback width
-            # - Fetch the image without specifying a theme
-            # - Finally, just return the brand icon instead of the (preferred) logo
             continue
 
     log.warning("Failed to find a valid brand logo or icon for %s.", brand_domain)
