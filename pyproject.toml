@@ -24,6 +24,7 @@ python-dateutil = "^2.9.0-post0"
 python3-discogs-client = "^2.7"
 Red-DiscordBot = "^3.5.12"
 
+pydantic = "^2.8.2"
 [tool.poetry.group.dev.dependencies]
 mypy = "^1.11.1"
 pre-commit = "^3.8.0"

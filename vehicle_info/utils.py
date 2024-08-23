@@ -12,7 +12,7 @@ from dvsa_mot_history import MOTHistory, NewRegVehicleResponse, VehicleWithMotRe
 from PIL import Image
 
 from .additional_vehicle_info import VehicleLookupAPI
-from .models import VehicleColours, VehicleData
+from .models import VehicleColours, VehicleData, build_vehicle_data
 
 log = logging.getLogger("red.tigattack.vehicle_info.utils")
 
@@ -61,7 +61,12 @@ async def get_vehicle_info(
         )
         additional_info = await additional_info_api.get_vehicle_details(vrn)
 
-    vehicle_data = await VehicleData.from_vehicle(ves_info, mot_info, additional_info)
+    # Build VehicleData
+    vehicle_data = await build_vehicle_data(
+        ves_info=ves_info,
+        mot_info=mot_info,
+        additional_info=additional_info,
+    )
 
     return vehicle_data
 
@@ -81,42 +86,23 @@ async def gen_vehicle_embed(vehicle_data: VehicleData) -> Embed:
         if brand_icon:
             embed.set_thumbnail(url=brand_icon)
 
-    # Set global first date of registration
-    first_registered_globally = vehicle_data.mot_first_registration_timestamp or vehicle_data.ves_first_registration_timestamp
-
-    # Determine if the vehicle was first registered in the UK or internationally
-    if vehicle_data.ves_first_dvla_registration_timestamp is not None:
-        # Vehicle was imported
-        first_registered_uk = vehicle_data.ves_first_dvla_registration_timestamp
-    else:
-        # Vehicle was first registered in the UK
-        first_registered_uk = None
-
     # Dynamically build the embed fields based on VehicleData attributes
     fields_to_include = {
-        "Colour": str(vehicle_data.colour).title(),
+        "Colour": vehicle_data.colour,
         vehicle_data.fuel_label: vehicle_data.fuel_type,
-        "Engine Capacity": f"{vehicle_data.engine_capacity} cc"
-        if vehicle_data.engine_capacity and not vehicle_data.vehicle_is_ev
-        else None,
-        "First Registered": first_registered_globally,
-        "First Registered in UK": first_registered_uk,
+        "Engine Capacity": vehicle_data.engine_capacity_formatted,
+        "First Registered": vehicle_data.first_registered_globally,
+        "First Registered in UK": vehicle_data.first_registered_uk,
         "V5C Last Issued": vehicle_data.date_of_last_v5c_issued_timestamp,
         "Tax Status": vehicle_data.tax_status,
-        "Tax Expiry": vehicle_data.tax_due_date_timestamp
-        if vehicle_data.tax_status is not None and "SORN" not in vehicle_data.tax_status
-        else None,
+        "Tax Expiry": vehicle_data.conditional_tax_due_date,
         "MOT Status": vehicle_data.mot_status,
         "MOT Expiry": vehicle_data.mot_expiry_date_timestamp,
-        "CO₂ Emissions": f"{vehicle_data.co2_emissions} g/km"
-        if vehicle_data.co2_emissions and not vehicle_data.vehicle_is_ev
-        else None,
+        "CO₂ Emissions": vehicle_data.co2_emissions_formatted,
         "Euro Status": vehicle_data.euro_status,
-        "Real Driving Emissions": vehicle_data.real_driving_emissions
-        if vehicle_data.real_driving_emissions and not vehicle_data.vehicle_is_ev
-        else None,
-        "Automated Vehicle": str(vehicle_data.automated_vehicle) if vehicle_data.automated_vehicle is not None else None,
-        "Marked for Export": "✅" if vehicle_data.marked_for_export else None,
+        "Real Driving Emissions": vehicle_data.conditional_real_driving_emissions,
+        "Automated Vehicle": vehicle_data.automated_vehicle_formatted,
+        "Marked for Export": vehicle_data.marked_for_export_formatted,
         "VIN": vehicle_data.vin,
     }
 
