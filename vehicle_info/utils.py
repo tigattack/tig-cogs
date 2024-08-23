@@ -64,7 +64,7 @@ async def get_vehicle_info(
 
 
 async def gen_vehicle_embed(vehicle_data: VehicleData) -> Embed:
-    """Helper method to send a vehicle embed"""
+    """Helper method to generate a vehicle embed"""
 
     embed = Embed(
         title=(
@@ -73,9 +73,10 @@ async def gen_vehicle_embed(vehicle_data: VehicleData) -> Embed:
         colour=VehicleColours.get_colour(vehicle_data.colour),
     )
 
-    brand_icon = await _get_brand_icon(vehicle_data.make)
-    if brand_icon:
-        embed.set_thumbnail(url=brand_icon)
+    if vehicle_data.make is not None:
+        brand_icon = await _get_brand_icon(vehicle_data.make)
+        if brand_icon:
+            embed.set_thumbnail(url=brand_icon)
 
     # Set global first date of registration
     first_registered_globally = vehicle_data.mot_first_registration_timestamp or vehicle_data.ves_first_registration_timestamp
@@ -99,7 +100,9 @@ async def gen_vehicle_embed(vehicle_data: VehicleData) -> Embed:
         "First Registered in UK": first_registered_uk,
         "V5C Last Issued": vehicle_data.date_of_last_v5c_issued_timestamp,
         "Tax Status": vehicle_data.tax_status,
-        "Tax Expiry": vehicle_data.tax_due_date_timestamp if "SORN" not in vehicle_data.tax_status else None,
+        "Tax Expiry": vehicle_data.tax_due_date_timestamp
+        if vehicle_data.tax_status is not None and "SORN" not in vehicle_data.tax_status
+        else None,
         "MOT Status": vehicle_data.mot_status,
         "MOT Expiry": vehicle_data.mot_expiry_date_timestamp,
         "CO₂ Emissions": f"{vehicle_data.co2_emissions} g/km"
