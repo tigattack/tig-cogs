@@ -9,7 +9,7 @@ from redbot.core import Config, app_commands, commands
 from redbot.core.bot import Red
 
 from .models import VehicleData
-from .utils import gen_mot_embed, gen_vehicle_embed, get_vehicle_info
+from .utils import fetch_vehicle_data, gen_mot_embed, generate_vehicle_embed
 
 log = logging.getLogger("red.tigattack.vehicle_info")
 
@@ -42,7 +42,7 @@ class Buttons(View):
 
     async def show_main_info(self, interaction: Interaction):
         # Generate main vehicle info embed
-        embed = await gen_vehicle_embed(self.vehicle_data)
+        embed = await generate_vehicle_embed(self.vehicle_data)
 
         # Remove all buttons and add back only the necessary ones
         self.clear_items()
@@ -109,10 +109,12 @@ class VehicleInfo(commands.Cog):
         additional_vehicle_info_api_cfg = await self.config.additional_vehicle_info_api()
 
         try:
-            vehicle_data = await get_vehicle_info(vrn, dvla_ves_token, dvsa_mot_history_token, additional_vehicle_info_api_cfg)
+            vehicle_data = await fetch_vehicle_data(
+                vrn, dvla_ves_token, dvsa_mot_history_token, additional_vehicle_info_api_cfg
+            )
 
             if vehicle_data:
-                embed = await gen_vehicle_embed(vehicle_data)
+                embed = await generate_vehicle_embed(vehicle_data)
                 await interaction.followup.send(embed=embed, view=Buttons(await interaction.original_response(), vehicle_data))
 
             else:
