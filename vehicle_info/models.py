@@ -56,7 +56,7 @@ class StatusFormatter(Enum):
     WARNING = "🟠"
     ERROR = "🔴"
     UNKNOWN = WARNING
-    NEUTRL = "⚪"
+    NEUTRAL = "⚪"
 
     @classmethod
     def format_ok(cls, text: str) -> str:
@@ -81,7 +81,7 @@ class StatusFormatter(Enum):
     @classmethod
     def format_neutral(cls, text: str) -> str:
         """Get text prefixed with an neutral status emote."""
-        return f"{cls.NEUTRL.value} {text}"
+        return f"{cls.NEUTRAL.value} {text}"
 
 
 class FuelLabels(Enum):
