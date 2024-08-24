@@ -55,7 +55,8 @@ async def get_vehicle_info(
     mot_info = await _get_dvsa_mot_info(vrn, dvsa_mot_history_token)
 
     if isinstance(mot_info, MotHistoryErrorResponse):
-        error = f"{mot_info.status_code}: {mot_info.message} - Errors: {', '.join(mot_info.errors)}"
+        err_strings = " - " + ", ".join(mot_info.errors) if mot_info.errors else ""
+        error = f"{mot_info.status_code}: {mot_info.message}{err_strings}"
         log.exception(error)
         raise ValueError(f"Error querying MOT History API: {error}")
 
