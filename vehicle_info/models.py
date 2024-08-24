@@ -16,7 +16,6 @@ from dvsa_mot_history import (
     VehicleWithMotResponse,
 )
 from pydantic.dataclasses import dataclass
-from redbot.core import chat_formatting
 
 from vehicle_info.additional_vehicle_info import VehicleDetails
 
@@ -51,13 +50,48 @@ class VehicleColours(Enum):
 
     @classmethod
     def get_colour(cls, colour_name: Optional[str]) -> Union[int, Colour]:
-        """Get the colour value by its name, case-insensitively."""
+        """Get the colour value by its name, case-insensitively"""
         if colour_name:
             colour_name = colour_name.upper()
             for colour in cls:
                 if colour_name == colour.name:
                     return colour.value
         return cls.GREY.value
+
+
+class StatusFormatter(Enum):
+    """Formatter for status strings"""
+
+    OK = "🟢"
+    WARNING = "🟠"
+    ERROR = "🔴"
+    UNKNOWN = WARNING
+    NEUTRL = "⚪"
+
+    @classmethod
+    def format_ok(cls, text: str) -> str:
+        """Get text prefixed with an OK status emote."""
+        return f"{cls.OK.value} {text}"
+
+    @classmethod
+    def format_warning(cls, text: str) -> str:
+        """Get text prefixed with a warning status emote."""
+        return f"{cls.WARNING.value} {text}"
+
+    @classmethod
+    def format_error(cls, text: str) -> str:
+        """Get text prefixed with an error status emote."""
+        return f"{cls.ERROR.value} {text}"
+
+    @classmethod
+    def format_unknown(cls, text: str) -> str:
+        """Get text prefixed with an unknown status emote."""
+        return cls.format_warning
+
+    @classmethod
+    def format_neutral(cls, text: str) -> str:
+        """Get text prefixed with an neutral status emote."""
+        return f"{cls.NEUTRL.value} {text}"
 
 
 @dataclass
@@ -128,7 +162,7 @@ class VehicleData:
     @property
     def marked_for_export_formatted(self) -> Optional[str]:
         """Get if the vehicle is marked for export"""
-        return chat_formatting.success("") if self.marked_for_export else None
+        return StatusFormatter.format_ok("") if self.marked_for_export else None
 
 
 # Factory function to create VehicleData instance
@@ -279,23 +313,23 @@ def format_euro_status(ves_info: Vehicle) -> Optional[str]:
 
 def format_mot_status(ves_info: Vehicle, mot_info: Union[VehicleWithMotResponse, NewRegVehicleResponse]) -> Optional[str]:
     """Returns a formatted MOT status"""
-    if not ves_info.motStatus:
-        status = utils.chat_formatting.warning("Unknown")
     mot_status = ves_info.motStatus
     if mot_status == MotStatus.VALID:
-        status = utils.chat_formatting.success(mot_status.value)
+        status = StatusFormatter.format_ok(mot_status.value)
     elif mot_status == MotStatus.NOT_VALID:
-        status = utils.chat_formatting.error(mot_status.value)
+        status = StatusFormatter.format_error(mot_status.value)
     elif mot_status == MotStatus.NO_DETAILS_HELD and isinstance(mot_info, NewRegVehicleResponse):
-        status = utils.chat_formatting.success("[<3 years old](https://blog.halfords.com/when-does-a-new-car-need-an-mot/)")
+        status = StatusFormatter.format_neutral(
+            "[Exempt](https://www.theaa.com/mot/advice/when-does-my-vehicle-need-its-first-mot)"
+        )
     elif mot_status == MotStatus.NO_DETAILS_HELD and isinstance(mot_info, VehicleWithMotResponse):
         if mot_info.motTests and mot_info.motTests[0].completedDate > datetime.now(dtUTC) - relativedelta(years=1):
             if mot_info.motTests[0].testResult == MotTestTestResult.PASSED:
-                status = utils.chat_formatting.success(MotStatus.VALID.value)
+                status = StatusFormatter.format_ok(MotStatus.VALID.value)
         else:
-            status = utils.chat_formatting.error("First MOT overdue")
+            status = StatusFormatter.format_error("First MOT overdue")
     else:
-        status = mot_status.value
+        status = StatusFormatter.format_unknown("Unknown")
 
     return status
 
@@ -303,11 +337,11 @@ def format_mot_status(ves_info: Vehicle, mot_info: Union[VehicleWithMotResponse,
 def format_tax_status(tax_status: Optional[TaxStatus]) -> Optional[str]:
     """Returns a formatted tax status"""
     if not tax_status:
-        return utils.chat_formatting.warning("No tax details available")
+        return StatusFormatter.format_unknown("No details available")
     if tax_status == TaxStatus.TAXED:
-        return utils.chat_formatting.success(tax_status.value)
+        return StatusFormatter.format_ok(tax_status.value)
     else:
-        return utils.chat_formatting.error(tax_status.value)
+        return StatusFormatter.format_error(tax_status.value)
 
 
 def format_timestamp(
