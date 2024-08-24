@@ -130,6 +130,7 @@ class VehicleData:
     marked_for_export: Optional[bool]
     vin: Optional[str]
     mot_tests: Optional[List[Union[DVSAMotTest, DVANIMotTest, CVSMotTest]]]
+    is_new_vehicle: Optional[bool]
     brand_icon_url: Optional[str]
 
     @property
@@ -206,6 +207,7 @@ async def build_vehicle_data(
     marked_for_export = ves_info.markedForExport
     vin = get_vin(additional_info)
     mot_tests = get_mot_tests(mot_info)
+    is_new_vehicle = get_is_new_vehicle(mot_info)
 
     return VehicleData(
         registration_number=registration_number,
@@ -232,6 +234,7 @@ async def build_vehicle_data(
         marked_for_export=marked_for_export,
         vin=vin,
         mot_tests=mot_tests,
+        is_new_vehicle=is_new_vehicle,
         brand_icon_url=brand_icon_url,
     )
 
@@ -288,6 +291,11 @@ def get_mot_tests(
 ) -> Optional[List[Union[DVSAMotTest, DVANIMotTest, CVSMotTest]]]:
     """Returns a list of MOT tests if mot_info is of type VehicleWithMotResponse"""
     return mot_info.motTests if isinstance(mot_info, VehicleWithMotResponse) else None
+
+
+def get_is_new_vehicle(mot_info: Union[VehicleWithMotResponse, NewRegVehicleResponse]) -> bool:
+    """Returns true if mot_info is of type NewRegVehicleResponse"""
+    return isinstance(mot_info, NewRegVehicleResponse)
 
 
 def generate_fuel_label(ves_info: Vehicle) -> Optional[str]:
