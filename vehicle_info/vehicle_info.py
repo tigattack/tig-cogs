@@ -1,15 +1,66 @@
 import logging
-from typing import Literal
+from typing import Literal, Optional
 
 from CelticTuning import Celtic, PowerUnits, TorqueUnits
-from discord import Colour, Embed, Guild, Interaction, User
+from discord import ButtonStyle, Colour, Embed, Guild, Interaction, InteractionMessage, User
 from discord.abc import User as UserABC
-from redbot.core import Config, app_commands, commands, utils
+from discord.ui import Button, View
+from redbot.core import Config, app_commands, commands
 from redbot.core.bot import Red
 
-from .utils import get_vehicle_info
+from .models import VehicleData
+from .utils import gen_mot_embed, gen_vehicle_embed, get_vehicle_info
 
 log = logging.getLogger("red.tigattack.vehicle_info")
+
+
+class Buttons(View):
+    def __init__(self, interaction: InteractionMessage, vehicle_data: VehicleData, *, timeout: float = 180):
+        super().__init__(timeout=timeout)
+        self.vehicle_data = vehicle_data
+
+        self.current_embed: Optional[Embed] = None
+        self.interaction = interaction
+
+        # Initial button setup: Start with "Main Info" disabled
+        self.main_info_button: Button = Button(label="Main Info", style=ButtonStyle.primary)
+        self.mot_info_button: Button = Button(label="Extended MOT Info", style=ButtonStyle.secondary)
+
+        # Assign callbacks
+        # Type check complains "Cannot assign to a method", and yet here I am doing it. Checkmate.
+        self.main_info_button.callback = self.show_main_info  # type: ignore
+        self.mot_info_button.callback = self.show_mot_info  # type: ignore
+
+        # Start with the "Main Info" button removed
+        self.add_item(self.mot_info_button)
+
+    async def on_timeout(self) -> None:
+        for i in self.children:
+            # Type check complains type has no attribute disabled, and yet here it is working ¯\_(ツ)_/¯
+            i.disabled = True  # type: ignore
+        await self.interaction.edit(view=self)
+
+    async def show_main_info(self, interaction: Interaction):
+        # Generate main vehicle info embed
+        embed = await gen_vehicle_embed(self.vehicle_data)
+
+        # Remove all buttons and add back only the necessary ones
+        self.clear_items()
+        self.add_item(self.mot_info_button)
+
+        await interaction.response.edit_message(embed=embed, view=self)
+        self.interaction = await interaction.original_response()
+
+    async def show_mot_info(self, interaction: Interaction):
+        # Generate MOT info embed
+        embed = await gen_mot_embed(self.vehicle_data)
+
+        # Remove all buttons and add back only the necessary ones
+        self.clear_items()
+        self.add_item(self.main_info_button)
+
+        await interaction.response.edit_message(embed=embed, view=self)
+        self.interaction = await interaction.original_response()
 
 
 class VehicleInfo(commands.Cog):
@@ -58,25 +109,29 @@ class VehicleInfo(commands.Cog):
         additional_vehicle_info_api_cfg = await self.config.additional_vehicle_info_api()
 
         try:
-            vehicle_info = await get_vehicle_info(vrn, dvla_ves_token, dvsa_mot_history_token, additional_vehicle_info_api_cfg)
+            vehicle_data = await get_vehicle_info(vrn, dvla_ves_token, dvsa_mot_history_token, additional_vehicle_info_api_cfg)
 
-            if vehicle_info is None:
-                embed = Embed(
-                    title="Error Querying Vehicle",
-                    description=f"Bad request - Registration **{vrn.upper()}** likely invalid.",
-                    colour=Colour.red(),
-                )
+            if vehicle_data:
+                embed = await gen_vehicle_embed(vehicle_data)
+                await interaction.followup.send(embed=embed, view=Buttons(await interaction.original_response(), vehicle_data))
+
             else:
-                embed = await gen_vehicle_embed(vehicle_info)
+                await interaction.followup.send(
+                    embed=Embed(
+                        title="Error Querying Vehicle",
+                        description=f"Bad request - Registration **{vrn.upper()}** likely invalid.",
+                        colour=Colour.red(),
+                    )
+                )
         except Exception as e:
             log.exception(e)
-            embed = Embed(
-                title="Error",
-                description="Failed to get vehicle info. Check console or logs for details",
-                colour=Colour.red(),
+            await interaction.followup.send(
+                embed=Embed(
+                    title="Error",
+                    description="Failed to get vehicle info. Check console or logs for details",
+                    colour=Colour.red(),
+                )
             )
-
-        await interaction.followup.send(embed=embed)
 
     @commands.group(name="vehicle_info")
     async def vehicle_info_config(self, ctx: commands.Context) -> None:
