@@ -9,7 +9,7 @@ from redbot.core import Config, app_commands, commands
 from redbot.core.bot import Red
 
 from .models import VehicleData
-from .utils import fetch_vehicle_data, gen_mot_embed, generate_vehicle_embed
+from .vehicle_utils import fetch_vehicle_data, gen_mot_embed, generate_vehicle_embed
 
 log = logging.getLogger("red.tigattack.vehicle_info")
 
