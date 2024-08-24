@@ -8,11 +8,18 @@ from discord import Embed
 from dvla_vehicle_enquiry_service import ErrorResponse as VesErrorResponse
 from dvla_vehicle_enquiry_service import Vehicle, VehicleEnquiryAPI
 from dvsa_mot_history import ErrorResponse as MotHistoryErrorResponse
-from dvsa_mot_history import MOTHistory, NewRegVehicleResponse, VehicleWithMotResponse
+from dvsa_mot_history import (
+    MOTHistory,
+    MotTestOdometerResultType,
+    MotTestTestResult,
+    NewRegVehicleResponse,
+    VehicleWithMotResponse,
+)
 from PIL import Image
+from redbot.core.utils.chat_formatting import humanize_number
 
 from .additional_vehicle_info import VehicleLookupAPI
-from .models import VehicleColours, VehicleData, build_vehicle_data, get_make
+from .models import StatusFormatter, VehicleColours, VehicleData, build_vehicle_data, format_timestamp, get_make
 
 log = logging.getLogger("red.tigattack.vehicle_info.utils")
 
@@ -117,6 +124,57 @@ async def gen_vehicle_embed(vehicle_data: VehicleData) -> Embed:
             text="Additional info such as full model, VIN, etc. not available. "
             + "Check `[p]vehicle_info additional_vehicle_info_config`."
         )
+
+    return embed
+
+
+async def gen_mot_embed(vehicle_data: VehicleData) -> Embed:
+    """Helper method to generate an embed with extended MOT info"""
+
+    embed = Embed(
+        title=(
+            f"{vehicle_data.registration_number} | {vehicle_data.manufactured_year} {vehicle_data.make} {vehicle_data.model}"
+        ),
+        colour=VehicleColours.get_colour(vehicle_data.colour),
+    )
+
+    if vehicle_data.brand_icon_url:
+        embed.set_thumbnail(url=vehicle_data.brand_icon_url)
+
+    test_results: list[str] = []
+    has_failed = False
+    mileage: Optional[str] = None
+    if vehicle_data.mot_tests:
+        has_failed = any(test.testResult == MotTestTestResult.FAILED for test in vehicle_data.mot_tests)
+        if has_failed:
+            for test in vehicle_data.mot_tests[:5]:
+                test_results.append(
+                    StatusFormatter.format_ok("")
+                    if test.testResult == MotTestTestResult.PASSED
+                    else StatusFormatter.format_error("")
+                )
+
+        last_mot_mileage_humanised = humanize_number(vehicle_data.mot_tests[0].odometerValue)
+        last_mot_timestamp = format_timestamp(vehicle_data.mot_tests[0].completedDate, "d")
+        mileage = (
+            f"{last_mot_mileage_humanised} {vehicle_data.mot_tests[0].odometerUnit.value} ({last_mot_timestamp})"
+            if vehicle_data.mot_tests[0].odometerResultType == MotTestOdometerResultType.READ
+            else StatusFormatter.format_warning(f"Unknown - {vehicle_data.mot_tests[0].odometerResultType.value.title()}")
+        )
+
+    test_history = StatusFormatter.format_ok("Never failed") if not has_failed and vehicle_data.is_new_vehicle else None
+
+    fields = {
+        "MOT Status": vehicle_data.mot_status,
+        "MOT Expiry": vehicle_data.mot_expiry_date_timestamp,
+        "Last 5 Results": "".join(reversed(test_results)),
+        "MOT Test History": test_history,
+        "Last Known Mileage": mileage,
+    }
+
+    for name, value in fields.items():
+        if value:
+            embed.add_field(name=name, value=value, inline=True)
 
     return embed
 
