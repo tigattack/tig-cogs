@@ -88,6 +88,7 @@ class VehicleData:
     marked_for_export: Optional[bool]
     vin: Optional[str]
     mot_tests: Optional[List[Union[DVSAMotTest, DVANIMotTest, CVSMotTest]]]
+    brand_icon_url: Optional[str]
 
     @property
     def first_registered_globally(self) -> Optional[str]:
@@ -135,6 +136,7 @@ async def build_vehicle_data(
     ves_info: Vehicle,
     mot_info: Union[VehicleWithMotResponse, NewRegVehicleResponse],
     additional_info: Optional[VehicleDetails] = None,
+    brand_icon_url: Optional[str] = None,
 ) -> VehicleData:
     """Factory function to create VehicleData from vehicle information"""
 
@@ -188,6 +190,7 @@ async def build_vehicle_data(
         marked_for_export=marked_for_export,
         vin=vin,
         mot_tests=mot_tests,
+        brand_icon_url=brand_icon_url,
     )
 
 

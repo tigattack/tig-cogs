@@ -12,7 +12,7 @@ from dvsa_mot_history import MOTHistory, NewRegVehicleResponse, VehicleWithMotRe
 from PIL import Image
 
 from .additional_vehicle_info import VehicleLookupAPI
-from .models import VehicleColours, VehicleData, build_vehicle_data
+from .models import VehicleColours, VehicleData, build_vehicle_data, get_make
 
 log = logging.getLogger("red.tigattack.vehicle_info.utils")
 
@@ -61,11 +61,15 @@ async def get_vehicle_info(
         )
         additional_info = await additional_info_api.get_vehicle_details(vrn)
 
+    make = get_make(ves_info, additional_info)
+    brand_icon_url = await _get_brand_icon(make) if make else None
+
     # Build VehicleData
     vehicle_data = await build_vehicle_data(
         ves_info=ves_info,
         mot_info=mot_info,
         additional_info=additional_info,
+        brand_icon_url=brand_icon_url,
     )
 
     return vehicle_data
@@ -81,10 +85,8 @@ async def gen_vehicle_embed(vehicle_data: VehicleData) -> Embed:
         colour=VehicleColours.get_colour(vehicle_data.colour),
     )
 
-    if vehicle_data.make is not None:
-        brand_icon = await _get_brand_icon(vehicle_data.make)
-        if brand_icon:
-            embed.set_thumbnail(url=brand_icon)
+    if vehicle_data.brand_icon_url:
+        embed.set_thumbnail(url=vehicle_data.brand_icon_url)
 
     # Dynamically build the embed fields based on VehicleData attributes
     fields_to_include = {
