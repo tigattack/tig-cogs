@@ -94,6 +94,14 @@ class StatusFormatter(Enum):
         return f"{cls.NEUTRL.value} {text}"
 
 
+class FuelLabels(Enum):
+    """Fuel labels for each vehicle fuel type"""
+
+    ICE = "⛽️"
+    HYBRID = "⛽️⚡️"
+    ELECTRIC = "⚡️"
+
+
 @dataclass
 class VehicleData:
     """Dataclass to hold processed vehicle information"""
@@ -286,15 +294,18 @@ def generate_fuel_label(ves_info: Vehicle) -> Optional[str]:
     """Generate formatted fuel label depending on fuel type"""
     if not ves_info.fuelType:
         return None
+
+    fuel_label = "Fuel "
     fuel_type = str(ves_info.fuelType).lower()
+
     if fuel_type in ["petrol", "diesel"]:
-        return "Fuel ⛽️"
+        fuel_label += FuelLabels.ICE.value
     elif fuel_type == "hybrid electric":
-        return "Fuel ⛽️⚡️"
+        fuel_label += FuelLabels.HYBRID.value
     elif fuel_type == "electricity":
-        return "Fuel ⚡️"
-    else:
-        return "Fuel"
+        fuel_label += FuelLabels.ELECTRIC.value
+
+    return fuel_label
 
 
 def format_real_driving_emissions(ves_info: Vehicle) -> Optional[str]:
