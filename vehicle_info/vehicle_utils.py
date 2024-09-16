@@ -1,6 +1,9 @@
 import logging
 from typing import Optional
+from urllib.parse import urljoin
 
+import aiohttp
+from aiohttp.web import HTTPException
 from CelticTuning import Celtic
 from discord import Embed
 from dvla_vehicle_enquiry_service import ErrorResponse as VesErrorResponse
@@ -11,9 +14,9 @@ from dvsa_mot_history import (
     NewRegVehicleResponse,
     VehicleWithMotResponse,
 )
+from slugify import slugify
 
 from .additional_vehicle_info import VehicleDetails, VehicleLookupAPI
-from .brand_icons import get_brand_icon
 from .models import StatusFormatter, VehicleColours, VehicleData
 from .vehicle_factory import (
     build_vehicle_data,
@@ -58,7 +61,7 @@ async def fetch_vehicle_data(
 
     additional_info = await _fetch_additional_info(vrn, additional_vehicle_api_cfg)
     make = get_make(ves_info, additional_info)
-    brand_icon_url = await get_brand_icon(make) if make else None
+    brand_icon_url = await _get_manufacturer_logo(make) if make else None
 
     # Build & return VehicleData
     return await build_vehicle_data(
@@ -208,3 +211,20 @@ def _log_mot_error(error_response):
     err_strings = " - " + ", ".join(error_response.errors) if error_response.errors else ""
     error_message = f"{error_response.status_code}: {error_response.message}{err_strings}"
     log.exception(error_message)
+
+
+async def _get_manufacturer_logo(manufacturer_name: str) -> Optional[str]:
+    base_url = "https://tigattack.github.io/car-logos"
+    data_url = urljoin(base_url, "data.json")
+    async with aiohttp.ClientSession() as session:
+        async with session.get(data_url) as resp:
+            if resp.status == 200:  # noqa: PLR2004
+                logo_data = await resp.json()
+            else:
+                raise HTTPException(text=f"Could not fetch data from {data_url}. Status code: {resp.status}")
+
+    for logo in logo_data:
+        if logo["slug"] == slugify(manufacturer_name) or logo["name"] == manufacturer_name:
+            return urljoin(base_url, logo["image"]["path"])
+
+    return None

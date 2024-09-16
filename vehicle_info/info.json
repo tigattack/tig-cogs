@@ -10,6 +10,7 @@
         "python-dateutil",
         "dvla_vehicle_enquiry_service",
         "dvsa_mot_history",
-        "git+https://github.com/tigattack/CelticTuning"
+        "git+https://github.com/tigattack/CelticTuning",
+        "python-slugify"
     ]
 }
