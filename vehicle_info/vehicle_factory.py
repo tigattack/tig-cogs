@@ -1,6 +1,6 @@
 from datetime import UTC as dtUTC
 from datetime import date, datetime
-from typing import List, Literal, Optional, Union
+from typing import Literal, Optional, Union
 
 from dateutil.relativedelta import relativedelta
 from discord.utils import format_dt
@@ -127,7 +127,7 @@ def get_vin(additional_info: Optional[VehicleDetails]) -> Optional[str]:
     return additional_info.VIN if additional_info else None
 
 
-def get_mot_tests(mot_info: VehicleResponseType) -> Optional[List[MotTestType]]:
+def get_mot_tests(mot_info: VehicleResponseType) -> Optional[list[MotTestType]]:
     """Returns a list of MOT tests if mot_info is of type VehicleWithMotResponse"""
     return mot_info.motTests if isinstance(mot_info, VehicleWithMotResponse) else None
 
@@ -137,7 +137,7 @@ def get_is_new_vehicle(mot_info: VehicleResponseType) -> bool:
     return isinstance(mot_info, NewRegVehicleResponse)
 
 
-def get_mot_test_results(mot_tests: Optional[List[MotTestType]]) -> List[str]:
+def get_mot_test_results(mot_tests: Optional[list[MotTestType]]) -> list[str]:
     """Get formatted MOT test results for the embed."""
     if not mot_tests:
         return []
@@ -151,7 +151,7 @@ def get_mot_test_results(mot_tests: Optional[List[MotTestType]]) -> List[str]:
     return test_results
 
 
-def get_last_known_mileage(mot_tests: Optional[List[MotTestType]]) -> Optional[str]:
+def get_last_known_mileage(mot_tests: Optional[list[MotTestType]]) -> Optional[str]:
     """Get the last known mileage for the vehicle."""
     if not mot_tests:
         return None
@@ -167,7 +167,7 @@ def get_last_known_mileage(mot_tests: Optional[List[MotTestType]]) -> Optional[s
         return StatusFormatter.format_warning(f"Unknown - {last_test.odometerResultType.value.title()}")
 
 
-def get_vehicle_has_failed_mots(mot_tests: Optional[List[MotTestType]]) -> bool:
+def get_vehicle_has_failed_mots(mot_tests: Optional[list[MotTestType]]) -> bool:
     """Get whether the vehicle has failed MOTs."""
     if not mot_tests:
         return False

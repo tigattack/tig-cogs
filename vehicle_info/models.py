@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import List, Optional, Union
+from typing import Optional, Union
 
 from discord import Colour
 from dvsa_mot_history import MotTestType
@@ -115,7 +115,7 @@ class VehicleData:
     manufactured_year: Optional[int]
     marked_for_export: Optional[bool]
     vin: Optional[str]
-    mot_tests: Optional[List[MotTestType]]
+    mot_tests: Optional[list[MotTestType]]
     is_new_vehicle: Optional[bool]
     brand_icon_url: Optional[str]
 
