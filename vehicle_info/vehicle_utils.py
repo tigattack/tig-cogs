@@ -1,6 +1,5 @@
 import logging
-from typing import Optional
-from urllib.parse import urljoin
+from typing import Optional, Union
 
 import aiohttp
 from aiohttp.web import HTTPException
@@ -210,16 +209,20 @@ def _log_mot_error(error: VehicleHistoryError):
 
 async def _get_manufacturer_logo(manufacturer_name: str) -> Optional[str]:
     base_url = "https://tigattack.github.io/car-logos"
-    data_url = urljoin(base_url, "data.json")
+    data_url = '/'.join([base_url, "logos.json"])
     async with aiohttp.ClientSession() as session:
         async with session.get(data_url) as resp:
-            if resp.status == 200:  # noqa: PLR2004
-                logo_data = await resp.json()
+            if resp.status == 200:
+                logo_data: list[dict[str, Union[str, dict[str, str]]]] = await resp.json()
             else:
                 raise HTTPException(text=f"Could not fetch data from {data_url}. Status code: {resp.status}")
 
     for logo in logo_data:
         if logo["slug"] == slugify(manufacturer_name) or logo["name"] == manufacturer_name:
-            return urljoin(base_url, logo["image"]["path"])
+            image = logo["image"]
+            if isinstance(image, dict):
+                return '/'.join([base_url, image["path"]])
+        else:
+            return None
 
-    return None
+    raise ValueError(f"Unexpected response format from {data_url}")
