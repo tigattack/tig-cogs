@@ -64,7 +64,7 @@ class VehicleLookupAPI:
         try:
             async with ClientSession() as session:
                 async with session.get(url, headers=headers) as response:
-                    if response.status == 200:  # noqa: PLR2004
+                    if response.status == 200:
                         try:
                             vehicle_data = await response.json()
                             return VehicleDetails(**vehicle_data)
