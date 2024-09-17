@@ -104,6 +104,8 @@ def get_model(additional_info: Optional[VehicleDetails], mot_info: VehicleRespon
 
 def get_colour(ves_info: VehicleResponse) -> Optional[str]:
     """Returns title-case colour from vehicle information"""
+    if ves_info.colour is None:
+        return None
     return ves_info.colour.title()
 
 
