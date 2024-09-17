@@ -158,15 +158,15 @@ def get_last_known_mileage(mot_tests: Optional[list[MotTestType]]) -> Optional[s
     if not mot_tests:
         return None
 
-    last_test = mot_tests[0]
-    last_mot_mileage_humanised = humanize_number(last_test.odometerValue) if last_test.odometerValue else None
-    last_mot_timestamp = format_timestamp(last_test.completedDate, "d")
-    last_mot_odo_unit = last_test.odometerUnit.value.lower() if last_test.odometerUnit and last_test.odometerUnit.value else ''
+    mot = mot_tests[0]
+    mot_mileage_humanised = humanize_number(mot.odometerValue) if mot.odometerValue else None
+    mot_timestamp = format_timestamp(mot.completedDate, "d")
+    mot_odo_unit = mot.odometerUnit.value.lower() if mot.odometerUnit and mot.odometerUnit.value else ""
 
-    if last_test.odometerResultType == MotTestOdometerResultType.READ:
-        return f"{last_mot_mileage_humanised}{last_mot_odo_unit} ({last_mot_timestamp})"
+    if mot.odometerResultType == MotTestOdometerResultType.READ:
+        return f"{mot_mileage_humanised}{mot_odo_unit} ({mot_timestamp})"
     else:
-        return StatusFormatter.format_warning(f"Unknown - {last_test.odometerResultType.value.title()}")
+        return StatusFormatter.format_warning(f"Unknown - {mot.odometerResultType.value.title()}")
 
 
 def get_vehicle_has_failed_mots(mot_tests: Optional[list[MotTestType]]) -> bool:
