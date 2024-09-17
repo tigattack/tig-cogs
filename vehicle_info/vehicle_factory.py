@@ -220,9 +220,12 @@ def format_mot_status(ves_info: VehicleResponse, mot_info: VehicleResponseType) 
             "[Exempt](https://www.theaa.com/mot/advice/when-does-my-vehicle-need-its-first-mot)"
         )
     elif mot_status == MotStatus.NO_DETAILS_HELD and isinstance(mot_info, VehicleWithMotResponse):
-        if mot_info.motTests and mot_info.motTests[0].completedDate > datetime.now(dtUTC) - relativedelta(years=1):
-            if mot_info.motTests[0].testResult == MotTestTestResult.PASSED:
-                status = StatusFormatter.format_ok(MotStatus.VALID.value)
+        if (
+            mot_info.motTests
+            and mot_info.motTests[0].completedDate > datetime.now(dtUTC) - relativedelta(years=1)
+            and mot_info.motTests[0].testResult == MotTestTestResult.PASSED
+        ):
+            status = StatusFormatter.format_ok(MotStatus.VALID.value)
         else:
             status = StatusFormatter.format_error("First MOT overdue")
     else:
