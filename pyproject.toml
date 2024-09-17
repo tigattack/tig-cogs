@@ -1,3 +1,6 @@
+[project]
+requires-python = "<3.12,>=3.9"
+
 [tool.poetry]
 name = "tig-cogs"
 version = "0.1.0"
@@ -6,13 +9,6 @@ authors = ["tigattack <10629864+tigattack@users.noreply.github.com>"]
 license = "GPL-3.0-only"
 readme = "README.md"
 package-mode = false
-
-[project]
-requires-python = "<3.12,>=3.9"
-
-[project.urls]
-Repository = "https://github.com/tigattack/tig-cogs"
-Issues = "https://github.com/tigattack/tig-cogs/issues"
 
 [tool.poetry.dependencies]
 python = "<3.12,>=3.9"
@@ -34,7 +30,6 @@ types-cffi = "^1.16.0.20240331"
 types-Pygments = "^2.18.0.20240506"
 types-python-dateutil = "^2.9.0.20240821"
 types-requests = "^2.32.0.20240712"
-
 
 [build-system]
 requires = ["poetry-core"]
