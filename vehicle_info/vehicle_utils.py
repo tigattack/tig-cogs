@@ -209,7 +209,10 @@ def _log_mot_error(error: VehicleHistoryError):
 
 async def _get_manufacturer_logo(manufacturer_name: str) -> Optional[str]:
     base_url = "https://tigattack.github.io/car-logos"
-    data_url = '/'.join([base_url, "logos.json"])
+    data_url = "/".join([base_url, "logos.json"])
+
+    log.debug(f"Fetching manufacturer logos from {data_url}")
+
     async with aiohttp.ClientSession() as session:
         async with session.get(data_url) as resp:
             if resp.status == 200:
@@ -221,8 +224,5 @@ async def _get_manufacturer_logo(manufacturer_name: str) -> Optional[str]:
         if logo["slug"] == slugify(manufacturer_name) or logo["name"] == manufacturer_name:
             image = logo["image"]
             if isinstance(image, dict):
-                return '/'.join([base_url, image["path"]])
-        else:
-            return None
-
-    raise ValueError(f"Unexpected response format from {data_url}")
+                return "/".join([base_url, image["path"]])
+            raise ValueError(f"Unexpected response format from {data_url}")
