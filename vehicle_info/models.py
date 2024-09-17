@@ -2,11 +2,7 @@ from enum import Enum
 from typing import List, Optional, Union
 
 from discord import Colour
-from dvsa_mot_history import (
-    CVSMotTest,
-    DVANIMotTest,
-    DVSAMotTest,
-)
+from dvsa_mot_history import MotTestType
 from pydantic.dataclasses import dataclass
 
 
@@ -119,7 +115,7 @@ class VehicleData:
     manufactured_year: Optional[int]
     marked_for_export: Optional[bool]
     vin: Optional[str]
-    mot_tests: Optional[List[Union[DVSAMotTest, DVANIMotTest, CVSMotTest]]]
+    mot_tests: Optional[List[MotTestType]]
     is_new_vehicle: Optional[bool]
     brand_icon_url: Optional[str]
 

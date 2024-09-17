@@ -6,14 +6,8 @@ import aiohttp
 from aiohttp.web import HTTPException
 from CelticTuning import Celtic
 from discord import Embed
-from dvla_vehicle_enquiry_service import ErrorResponse as VesErrorResponse
-from dvla_vehicle_enquiry_service import Vehicle, VehicleEnquiryAPI
-from dvsa_mot_history import ErrorResponse as MotHistoryErrorResponse
-from dvsa_mot_history import (
-    MOTHistory,
-    NewRegVehicleResponse,
-    VehicleWithMotResponse,
-)
+from dvla_vehicle_enquiry_service import VehicleEnquiryAPI, VehicleEnquiryError, VehicleResponse
+from dvsa_mot_history import MOTHistory, VehicleHistoryError, VehicleResponseType
 from slugify import slugify
 
 from .additional_vehicle_info import VehicleDetails, VehicleLookupAPI
@@ -46,18 +40,18 @@ async def fetch_vehicle_data(
             raise ValueError(f"DVSA MOT History API {cred} not found")
 
     # Fetch vehicle data from DVLA VES
-    ves_info = await _get_dvla_ves_info(vrn, dvla_ves_token)
-
-    if isinstance(ves_info, VesErrorResponse):
-        _log_ves_error(ves_info.errors)
+    try:
+        ves_info = await _get_dvla_ves_info(vrn, dvla_ves_token)
+    except VehicleEnquiryError as e:
+        _log_ves_error(e)
         return None
 
     # Fetch MOT data from DVSA
-    mot_info = await _get_dvsa_mot_info(vrn, dvsa_mot_history_token)
-
-    if isinstance(mot_info, MotHistoryErrorResponse):
-        _log_mot_error(mot_info)
-        raise ValueError("Error querying MOT History API")
+    try:
+        mot_info = await _get_dvsa_mot_info(vrn, dvsa_mot_history_token)
+    except VehicleHistoryError as e:
+        _log_mot_error(e)
+        return None
 
     additional_info = await _fetch_additional_info(vrn, additional_vehicle_api_cfg)
     make = get_make(ves_info, additional_info)
@@ -147,16 +141,14 @@ async def _fetch_additional_info(vrn: str, api_cfg: dict[str, str]) -> Optional[
     return None
 
 
-async def _get_dvla_ves_info(vrn: str, dvla_ves_token: dict[str, str]) -> Vehicle | VesErrorResponse:
+async def _get_dvla_ves_info(vrn: str, dvla_ves_token: dict[str, str]) -> VehicleResponse:
     """Get vehicle info from DVLA Vehicle Enquiry Service API"""
     ves_api = VehicleEnquiryAPI(dvla_ves_token["token"])
     ves_info = await ves_api.get_vehicle(vrn)
     return ves_info
 
 
-async def _get_dvsa_mot_info(
-    vrn: str, dvsa_mot_history_token: dict[str, str]
-) -> VehicleWithMotResponse | NewRegVehicleResponse | MotHistoryErrorResponse:
+async def _get_dvsa_mot_info(vrn: str, dvsa_mot_history_token: dict[str, str]) -> VehicleResponseType:
     """Get MOT info from DVSA MOT History API"""
     mot_api = MOTHistory(
         dvsa_mot_history_token["client_id"],
@@ -200,16 +192,19 @@ def _build_vehicle_embed_fields(vehicle_data: VehicleData) -> dict[Optional[str]
     }
 
 
-def _log_ves_error(errors):
+def _log_ves_error(error: VehicleEnquiryError) -> None:
     """Log errors."""
-    error_messages = [f"{error.status}: {error.title}" + (f" - {error.detail}" if error.detail else "") for error in errors]
-    log.exception(", ".join(error_messages))
+    if error.errors:
+        error_messages = [f"{error.get('status')}: {error.get('title')} - {error.get('detail')}" for error in error.errors]
+    else:
+        error_messages = [f"{error.status}: {error.title}"]
+    log.exception("Vehicle Enquiry API error: " + ", ".join(error_messages))
 
 
-def _log_mot_error(error_response):
+def _log_mot_error(error: VehicleHistoryError):
     """Log error response."""
-    err_strings = " - " + ", ".join(error_response.errors) if error_response.errors else ""
-    error_message = f"{error_response.status_code}: {error_response.message}{err_strings}"
+    err_strings = " - " + ", ".join(error.errors) if error.errors else ""
+    error_message = f"MOT history API error: [{error.status_code}]{err_strings}"
     log.exception(error_message)
 
 
