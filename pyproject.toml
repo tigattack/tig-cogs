@@ -16,11 +16,11 @@ celtictuning = {git = "https://github.com/tigattack/CelticTuning"}
 dvla-vehicle-enquiry-service = "^1.0.4"
 dvsa-mot-history = "^1.0.4"
 pillow = "^10.4.0"
+pydantic = "^2.8.2"
 python-dateutil = "^2.9.0-post0"
 python3-discogs-client = "^2.7"
 Red-DiscordBot = "3.5.13"
 
-pydantic = "^2.8.2"
 [tool.poetry.group.dev.dependencies]
 mypy = "^1.11.2"
 pre-commit = "^3.8.0"
