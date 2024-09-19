@@ -65,7 +65,7 @@ async def fetch_vehicle_data(
     )
 
 
-async def generate_vehicle_embed(vehicle_data: VehicleData) -> Embed:
+async def gen_main_embed(vehicle_data: VehicleData) -> Embed:
     """Generate an embed for vehicle data."""
     embed = Embed(
         title=(

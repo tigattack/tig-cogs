@@ -9,7 +9,7 @@ from redbot.core.bot import Red
 
 from . import config_utils
 from .models import VehicleData
-from .vehicle_utils import fetch_vehicle_data, gen_mot_embed, generate_vehicle_embed
+from .vehicle_utils import fetch_vehicle_data, gen_main_embed, gen_mot_embed
 
 log = logging.getLogger("red.tigattack.vehicle_info")
 
@@ -23,32 +23,32 @@ class Buttons(View):
         self.interaction = interaction
 
         # Initial button setup: Start with "Main Info" disabled
-        self.main_info_button: Button = Button(label="Main Info", style=ButtonStyle.primary)
-        self.mot_info_button: Button = Button(label="Extended MOT Info", style=ButtonStyle.secondary)
+        self.main_page_button: Button = Button(label="Back", style=ButtonStyle.primary)
+        self.mot_page_button: Button = Button(label="MOT Detail", style=ButtonStyle.secondary)
 
         # Assign callbacks
         # Type check complains "Cannot assign to a method", and yet here I am doing it. Checkmate.
-        self.main_info_button.callback = self.show_main_info  # type: ignore
-        self.mot_info_button.callback = self.show_mot_info  # type: ignore
+        self.main_page_button.callback = self.show_main_page  # type: ignore
+        self.mot_page_button.callback = self.show_mot_page  # type: ignore
 
         # Start with the "Main Info" button removed
-        self.add_item(self.mot_info_button)
+        self.add_item(self.mot_page_button)
 
     async def on_timeout(self) -> None:
         for item in self.children:
             if hasattr(item, "disabled"):
-                item.disabled = True
+                item.disabled = True  # type: ignore
             else:
                 log.error(f"Button {item} has no 'disabled' attribute")
         await self.interaction.edit(view=self)
 
-    async def show_main_info(self, interaction: Interaction) -> None:
-        embed = await generate_vehicle_embed(self.vehicle_data)
+    async def show_main_page(self, interaction: Interaction) -> None:
+        embed = await gen_main_embed(self.vehicle_data)
         self.update_buttons(remove="main")
         await interaction.response.edit_message(embed=embed, view=self)
         self.interaction = await interaction.original_response()
 
-    async def show_mot_info(self, interaction: Interaction) -> None:
+    async def show_mot_page(self, interaction: Interaction) -> None:
         embed = await gen_mot_embed(self.vehicle_data)
         self.update_buttons(remove="mot")
         await interaction.response.edit_message(embed=embed, view=self)
@@ -58,9 +58,9 @@ class Buttons(View):
         """Helper function to update buttons based on the current view"""
         self.clear_items()
         if remove != "main":
-            self.add_item(self.main_info_button)
+            self.add_item(self.main_page_button)
         if remove != "mot":
-            self.add_item(self.mot_info_button)
+            self.add_item(self.mot_page_button)
 
 
 class VehicleInfo(commands.Cog):
@@ -102,7 +102,7 @@ class VehicleInfo(commands.Cog):
             )
 
             if vehicle_data:
-                embed = await generate_vehicle_embed(vehicle_data)
+                embed = await gen_main_embed(vehicle_data)
                 await interaction.followup.send(embed=embed, view=Buttons(await interaction.original_response(), vehicle_data))
 
             else:
