@@ -1,3 +1,6 @@
+[project]
+requires-python = "<3.12,>=3.9"
+
 [tool.poetry]
 name = "tig-cogs"
 version = "0.1.0"
@@ -7,25 +10,20 @@ license = "GPL-3.0-only"
 readme = "README.md"
 package-mode = false
 
-[project]
-requires-python = "<3.12,>=3.9"
-
-[project.urls]
-Repository = "https://github.com/tigattack/tig-cogs"
-Issues = "https://github.com/tigattack/tig-cogs/issues"
-
 [tool.poetry.dependencies]
 python = "<3.12,>=3.9"
-celtictuning = {git = "https://github.com/tigattack/CelticTuning"}
-dvla-vehicle-enquiry-service = "^0.1.1"
-dvsa-mot-history = "^0.1.2"
+celtic_tuning = {git = "https://github.com/tigattack/CelticTuning"}
+dvla-vehicle-enquiry-service = "^1.0.4"
+dvsa-mot-history = "^1.0.4"
 pillow = "^10.4.0"
+pydantic = "^2.8.2"
 python-dateutil = "^2.9.0-post0"
+python-slugify = "^8.0.4"
 python3-discogs-client = "^2.7"
-Red-DiscordBot = "^3.5.12"
+Red-DiscordBot = "3.5.13"
 
 [tool.poetry.group.dev.dependencies]
-mypy = "^1.11.1"
+mypy = "^1.11.2"
 pre-commit = "^3.8.0"
 ruff = "^0.6.1"
 types-beautifulsoup4 = "^4.12.0.20240511"
@@ -34,7 +32,6 @@ types-Pygments = "^2.18.0.20240506"
 types-python-dateutil = "^2.9.0.20240821"
 types-requests = "^2.32.0.20240712"
 
-
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
@@ -42,11 +39,12 @@ build-backend = "poetry.core.masonry.api"
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 
-[tool.ruff.lint]
-select = ["F", "E", "W", "I", "ASYNC", "PL", "RUF"]
-
 [tool.ruff]
 line-length = 127
+
+[tool.ruff.lint]
+extend-select = ["UP", "PLR", "E", "W", "I", "ASYNC", "PL", "RUF"]
+ignore = ["PLR2004"]
 
 [tool.mypy]
 disable_error_code = "import-untyped"
