@@ -198,14 +198,14 @@ def _log_ves_error(error: VehicleEnquiryError) -> None:
         error_messages = [f"{error.get('status')}: {error.get('title')} - {error.get('detail')}" for error in error.errors]
     else:
         error_messages = [f"{error.status}: {error.title}"]
-    log.exception("Vehicle Enquiry API error: " + ", ".join(error_messages))
+    log.error("Vehicle Enquiry API error: " + ", ".join(error_messages))
 
 
 def _log_mot_error(error: VehicleHistoryError):
     """Log error response."""
     err_strings = " - " + ", ".join(error.errors) if error.errors else ""
     error_message = f"MOT history API error: [{error.status_code}]{err_strings}"
-    log.exception(error_message)
+    log.error(error_message)
 
 
 async def _get_manufacturer_logo(manufacturer_name: str) -> Optional[str]:
