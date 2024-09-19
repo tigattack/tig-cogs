@@ -1,7 +1,7 @@
 import logging
 from typing import Optional
 
-from CelticTuning import PowerUnits, TorqueUnits
+from celtic_tuning import PowerUnits, TorqueUnits
 from discord import ButtonStyle, Colour, Embed, Interaction, InteractionMessage
 from discord.ui import Button, View
 from redbot.core import Config, app_commands, commands

@@ -12,7 +12,7 @@ package-mode = false
 
 [tool.poetry.dependencies]
 python = "<3.12,>=3.9"
-celtictuning = {git = "https://github.com/tigattack/CelticTuning"}
+celtic_tuning = {git = "https://github.com/tigattack/CelticTuning"}
 dvla-vehicle-enquiry-service = "^1.0.4"
 dvsa-mot-history = "^1.0.4"
 pillow = "^10.4.0"

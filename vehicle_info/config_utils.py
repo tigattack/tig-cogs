@@ -1,6 +1,6 @@
 from typing import Literal, Union
 
-from CelticTuning import Celtic, PowerUnits, TorqueUnits
+from celtic_tuning import PowerUnits, TorqueUnits, resolve_unit_case
 from discord import Colour, Embed, Guild, User
 from discord.abc import User as UserABC
 from redbot.core import Config
@@ -42,7 +42,7 @@ async def gen_unit_config_embed(
 
 async def set_power_unit(config: Config, entity: UserABC | Guild, unit: str) -> None:
     """Helper method to set the power unit config value"""
-    unit_normalised = Celtic.normalise_unit(unit, PowerUnits)
+    unit_normalised = resolve_unit_case(unit, PowerUnits)
 
     if unit_normalised not in PowerUnits._value2member_map_:
         valid_units = ", ".join([pu.value for pu in PowerUnits])
@@ -53,7 +53,7 @@ async def set_power_unit(config: Config, entity: UserABC | Guild, unit: str) -> 
 
 async def set_torque_unit(config: Config, entity: UserABC | Guild, unit: str) -> None:
     """Helper method to set the torque unit config value"""
-    unit_normalised = Celtic.normalise_unit(unit, TorqueUnits)
+    unit_normalised = resolve_unit_case(unit, TorqueUnits)
 
     if unit_normalised not in TorqueUnits._value2member_map_:
         valid_units = ", ".join([tu.value for tu in TorqueUnits])

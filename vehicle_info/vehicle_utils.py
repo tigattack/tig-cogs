@@ -3,7 +3,7 @@ from typing import Optional, Union
 
 import aiohttp
 from aiohttp.web import HTTPException
-from CelticTuning import Celtic
+from celtic_tuning import Celtic
 from discord import Embed
 from dvla_vehicle_enquiry_service import VehicleEnquiryAPI, VehicleEnquiryError, VehicleResponse
 from dvsa_mot_history import MOTHistory, VehicleHistoryError, VehicleResponseType
