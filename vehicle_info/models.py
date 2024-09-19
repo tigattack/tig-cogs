@@ -118,6 +118,7 @@ class VehicleData:
     mot_tests: Optional[list[MotTestType]]
     is_new_vehicle: Optional[bool]
     brand_icon_url: Optional[str]
+    revenue_weight: Optional[str]
 
     @property
     def first_registered_globally(self) -> Optional[str]:

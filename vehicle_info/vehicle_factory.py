@@ -53,6 +53,7 @@ async def build_vehicle_data(
     vin = get_vin(additional_info)
     mot_tests = get_mot_tests(mot_info)
     is_new_vehicle = get_is_new_vehicle(mot_info)
+    revenue_weight = format_revenue_weight(ves_info.revenueWeight)
 
     return VehicleData(
         registration_number=registration_number,
@@ -81,6 +82,7 @@ async def build_vehicle_data(
         mot_tests=mot_tests,
         is_new_vehicle=is_new_vehicle,
         brand_icon_url=brand_icon_url,
+        revenue_weight=revenue_weight,
     )
 
 
@@ -253,3 +255,9 @@ def format_timestamp(
     if isinstance(dt, date):
         dt = datetime.combine(dt, datetime.min.replace(tzinfo=dtUTC).time())
     return format_dt(dt, style)
+
+def format_revenue_weight(weight: Optional[int]) -> Optional[str]:
+    """Format revenue weight into a markdown link with further information"""
+    if not weight:
+        return None
+    return humanize_number(weight) + " kg"

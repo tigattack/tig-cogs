@@ -183,6 +183,7 @@ def _build_vehicle_embed_fields(vehicle_data: VehicleData) -> dict[Optional[str]
         "MOT Status": vehicle_data.mot_status,
         "MOT Expiry": vehicle_data.mot_expiry_date_timestamp,
         "CO₂ Emissions": vehicle_data.co2_emissions_formatted,
+        "Revenue Weight": vehicle_data.revenue_weight,
         "Euro Status": vehicle_data.euro_status,
         "Real Driving Emissions": vehicle_data.conditional_real_driving_emissions,
         "Automated Vehicle": vehicle_data.automated_vehicle_formatted,
